@@ -69,17 +69,22 @@ public class RedisClient extends DB {
     int port;
 
     String portString = props.getProperty(PORT_PROPERTY);
-    if (portString != null) {
+    boolean clusterEnabled = Boolean.parseBoolean(props.getProperty(CLUSTER_PROPERTY));
+    if (portString != null && !clusterEnabled) {
       port = Integer.parseInt(portString);
     } else {
       port = Protocol.DEFAULT_PORT;
     }
     String host = props.getProperty(HOST_PROPERTY);
 
-    boolean clusterEnabled = Boolean.parseBoolean(props.getProperty(CLUSTER_PROPERTY));
     if (clusterEnabled) {
       Set<HostAndPort> jedisClusterNodes = new HashSet<>();
-      jedisClusterNodes.add(new HostAndPort(host, port));
+      String[] hosts = host.split(";");
+      String[] ports = portString.split(";");
+      for (int i = 0; i < hosts.length; i++) {
+        jedisClusterNodes.add(new HostAndPort(hosts[i], Integer.parseInt(ports[i])));
+      }
+      //jedisClusterNodes.add(new HostAndPort(host, port));
       jedis = new JedisCluster(jedisClusterNodes);
     } else {
       String redisTimeout = props.getProperty(TIMEOUT_PROPERTY);
@@ -88,7 +93,7 @@ public class RedisClient extends DB {
       } else {
         jedis = new Jedis(host, port);
       }
-      ((Jedis) jedis).connect();
+      //((Jedis) jedis).connect();
     }
 
     String password = props.getProperty(PASSWORD_PROPERTY);
